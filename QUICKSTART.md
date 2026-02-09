@@ -1,0 +1,154 @@
+# Quick Start Guide
+
+## Prerequisites
+
+- Node.js 18+
+- Atlassian Cloud Confluence account
+- Confluence API token
+
+## 1. Get Your Confluence API Token
+
+1. Go to https://id.atlassian.com/manage-profile/security/api-tokens
+2. Click "Create API token"
+3. Give it a name like "Claude MCP Server"
+4. Copy the token (you'll need it in the next step)
+
+## 2. Configure Environment
+
+```bash
+cd /home/harsh-vaghela/saleshandy/confluence-api-docs-mcp
+cp .env.example .env
+```
+
+Edit `.env` with your credentials:
+
+```env
+CONFLUENCE_BASE_URL=https://yourcompany.atlassian.net
+CONFLUENCE_EMAIL=your.email@company.com
+CONFLUENCE_API_TOKEN=your-api-token-here
+```
+
+## 3. Configure Claude Code
+
+Add to `~/.claude.json`:
+
+```json
+{
+  "mcpServers": {
+    "confluence-api-docs": {
+      "command": "node",
+      "args": ["/home/harsh-vaghela/saleshandy/confluence-api-docs-mcp/dist/index.js"],
+      "env": {
+        "CONFLUENCE_BASE_URL": "https://yourcompany.atlassian.net",
+        "CONFLUENCE_EMAIL": "your.email@company.com",
+        "CONFLUENCE_API_TOKEN": "your-api-token"
+      }
+    }
+  }
+}
+```
+
+## 4. Build and Start
+
+```bash
+npm run build
+npm start
+```
+
+You should see: `Confluence API Docs MCP server started`
+
+## 5. Test the Server
+
+In Claude Code, ask:
+
+```
+Show me available Confluence spaces
+```
+
+This will list all your Confluence spaces. If it works, you're ready!
+
+## 6. Create API Documentation
+
+### From a local running server (saleshandy-edge):
+
+```
+Create API documentation in space DEV from http://localhost:3000/sh/api/edge/api-doc-json
+```
+
+### From a file:
+
+```
+Create API documentation in space DEV from /path/to/swagger.json
+```
+
+### With custom organization:
+
+```
+Sync the API documentation to Confluence space DEV, grouping by tags (separate pages for each tag)
+```
+
+```
+Sync the API documentation to Confluence space DEV as a single page
+```
+
+## 7. Update Documentation
+
+```
+Update page 123456789 with the latest API spec from http://localhost:3000/sh/api/edge/api-doc-json
+```
+
+## Available Commands
+
+| Task | Ask Claude | Result |
+|------|-----------|--------|
+| List spaces | "Show available Confluence spaces" | View all spaces |
+| Search pages | "Search for pages with 'API'" | Find existing pages |
+| Get page | "Get content of page 123456" | View page content |
+| Create docs | "Create API docs from URL in space KEY" | New documentation page |
+| Update docs | "Update page ID with new swagger" | Updated documentation |
+| Sync all | "Sync swagger to Confluence" | Organized multi-page docs |
+| Delete page | "Delete page 123456" | Remove page |
+
+## Troubleshooting
+
+### "CONFLUENCE_BASE_URL environment variable is required"
+- Make sure you've copied `.env.example` to `.env`
+- Verify all three environment variables are set
+
+### "Error: Confluence API returned 401"
+- Check your email and API token are correct
+- Verify the token hasn't expired
+
+### "Error: Swagger parsing failed"
+- Ensure the URL is correct and returns valid JSON
+- For local dev, make sure the server is running
+- For files, verify the path is absolute
+
+### "Error: Space KEY not found"
+- List spaces first to get the correct key
+- Space keys are case-sensitive
+
+## Integration with saleshandy-edge
+
+The saleshandy-edge API documentation is available at:
+
+**Main API:**
+```
+http://localhost:3000/sh/api/edge/api-doc-json
+```
+
+**Admin Panel:**
+```
+http://localhost:3000/sh/api/edge/api-doc/admin-panel
+```
+
+To export as file:
+```bash
+curl http://localhost:3000/sh/api/edge/api-doc-json > swagger.json
+```
+
+Then use: `Create API documentation from /path/to/swagger.json`
+
+## Need Help?
+
+Check the README.md for detailed documentation on all available tools.
