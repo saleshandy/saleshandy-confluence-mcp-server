@@ -1,6 +1,8 @@
 import { Tool } from '@modelcontextprotocol/sdk/types.js'
 import { ConfluenceClient } from '../services/confluence-client.js'
 import { SwaggerParserService } from '../services/swagger-parser.js'
+import { ControllerParserService } from '../services/controller-parser.js'
+import { PostmanGenerator } from '../services/postman-generator.js'
 import { DocGenerator } from '../services/doc-generator.js'
 import { listSpaces } from './list-spaces.js'
 import { searchPages } from './search-pages.js'
@@ -8,6 +10,8 @@ import { getPage } from './get-page.js'
 import { createApiDoc } from './create-api-doc.js'
 import { updateApiDoc } from './update-api-doc.js'
 import { syncSwaggerToConfluence } from './sync-swagger.js'
+import { createApiDocFromController } from './create-api-doc-from-controller.js'
+import { updateApiDocFromController } from './update-api-doc-from-controller.js'
 import { deletePage } from './delete-page.js'
 
 export function defineTools(): Tool[] {
@@ -158,6 +162,78 @@ export function defineTools(): Tool[] {
         required: ['pageId'],
       },
     },
+    {
+      name: 'create_api_doc_from_controller',
+      description: 'Create a new API documentation page from NestJS controller files',
+      inputSchema: {
+        type: 'object' as const,
+        properties: {
+          controllerPath: {
+            type: 'string',
+            description: 'Path to a .controller.ts file or directory containing controller files',
+          },
+          spaceKey: {
+            type: 'string',
+            description: 'Target Confluence space key',
+          },
+          parentPageId: {
+            type: 'string',
+            description: 'Optional: parent page ID for nesting',
+          },
+          title: {
+            type: 'string',
+            description: 'Optional: custom page title',
+          },
+          baseUrl: {
+            type: 'string',
+            description: 'Optional: API base URL for Postman collection',
+          },
+          filterTags: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Optional: only include endpoints with these tags',
+          },
+          filterPaths: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Optional: only include endpoints matching these path patterns',
+          },
+        },
+        required: ['controllerPath', 'spaceKey'],
+      },
+    },
+    {
+      name: 'update_api_doc_from_controller',
+      description: 'Update an existing API documentation page with NestJS controller files',
+      inputSchema: {
+        type: 'object' as const,
+        properties: {
+          pageId: {
+            type: 'string',
+            description: 'Existing Confluence page ID to update',
+          },
+          controllerPath: {
+            type: 'string',
+            description: 'Path to a .controller.ts file or directory containing controller files',
+          },
+          baseUrl: {
+            type: 'string',
+            description: 'Optional: API base URL for Postman collection',
+          },
+          filterTags: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Optional: only include endpoints with these tags',
+          },
+          filterPaths: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Optional: only include endpoints matching these path patterns',
+          },
+        },
+        required: ['pageId', 'controllerPath'],
+      },
+    },
   ]
 }
 
@@ -166,6 +242,8 @@ export async function executeTool(
   input: Record<string, unknown>,
   confluenceClient: ConfluenceClient,
   swaggerParser: SwaggerParserService,
+  controllerParser: ControllerParserService,
+  postmanGenerator: PostmanGenerator,
   docGenerator: DocGenerator
 ): Promise<unknown> {
   switch (name) {
@@ -176,11 +254,29 @@ export async function executeTool(
     case 'get_page':
       return await getPage(confluenceClient, input as any)
     case 'create_api_doc':
-      return await createApiDoc(confluenceClient, swaggerParser, docGenerator, input as any)
+      return await createApiDoc(confluenceClient, swaggerParser, postmanGenerator, docGenerator, input as any)
     case 'update_api_doc':
-      return await updateApiDoc(confluenceClient, swaggerParser, docGenerator, input as any)
+      return await updateApiDoc(confluenceClient, swaggerParser, postmanGenerator, docGenerator, input as any)
     case 'sync_swagger_to_confluence':
-      return await syncSwaggerToConfluence(confluenceClient, swaggerParser, docGenerator, input as any)
+      return await syncSwaggerToConfluence(confluenceClient, swaggerParser, postmanGenerator, docGenerator, input as any)
+    case 'create_api_doc_from_controller':
+      return await createApiDocFromController(
+        confluenceClient,
+        controllerParser,
+        postmanGenerator,
+        docGenerator,
+        swaggerParser,
+        input as any
+      )
+    case 'update_api_doc_from_controller':
+      return await updateApiDocFromController(
+        confluenceClient,
+        controllerParser,
+        postmanGenerator,
+        docGenerator,
+        swaggerParser,
+        input as any
+      )
     case 'delete_page':
       return await deletePage(confluenceClient, input as any)
     default:

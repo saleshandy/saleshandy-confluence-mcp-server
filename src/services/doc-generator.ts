@@ -26,7 +26,11 @@ export class DocGenerator {
     this.baseUrl = baseUrl
   }
 
-  generateFullDocumentation(swagger: ParsedSwagger, groupedEndpoints: Map<string, ParsedEndpoint[]>): string {
+  generateFullDocumentation(
+    swagger: ParsedSwagger,
+    groupedEndpoints: Map<string, ParsedEndpoint[]>,
+    postmanJson?: string
+  ): string {
     let html = '<h1>' + this.escapeHtml(swagger.title) + '</h1>\n'
 
     if (swagger.description) {
@@ -40,6 +44,10 @@ export class DocGenerator {
       for (const endpoint of endpoints) {
         html += this.generateEndpointDocumentation(endpoint)
       }
+    }
+
+    if (postmanJson) {
+      html += this.generatePostmanSection(postmanJson)
     }
 
     return html
@@ -250,6 +258,25 @@ export class DocGenerator {
     if (schema?.enum) return String(schema.enum[0])
     if (schema?.type === 'number' || schema?.type === 'integer') return '1'
     return `<${param.name}>`
+  }
+
+  private generatePostmanSection(postmanJson: string): string {
+    let html = '\n<h2>Postman Collection</h2>\n'
+    html += '<p>Copy the JSON below to import this API collection into Postman:</p>\n'
+    html += '<ac:structured-macro ac:name="expand">\n'
+    html += '  <ac:parameter ac:name="title">Show Postman Collection JSON</ac:parameter>\n'
+    html += '  <ac:rich-text-body>\n'
+    html += '    <ac:structured-macro ac:name="code">\n'
+    html += '      <ac:parameter ac:name="language">json</ac:parameter>\n'
+    html += '      <ac:parameter ac:name="linenumbers">true</ac:parameter>\n'
+    html += '      <ac:plain-text-body><![CDATA['
+    html += postmanJson
+    html += ']]></ac:plain-text-body>\n'
+    html += '    </ac:structured-macro>\n'
+    html += '  </ac:rich-text-body>\n'
+    html += '</ac:structured-macro>\n'
+
+    return html
   }
 
   private escapeHtml(text: string): string {

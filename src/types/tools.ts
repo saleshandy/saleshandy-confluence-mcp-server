@@ -88,3 +88,34 @@ export interface DeletePageOutput {
   success: boolean
   pageId: string
 }
+
+export interface CreateApiDocFromControllerInput {
+  controllerPath: string
+  spaceKey: string
+  title?: string
+  parentPageId?: string
+  baseUrl?: string
+  filterTags?: string[]
+  filterPaths?: string[]
+}
+
+export interface CreateApiDocFromControllerOutput {
+  pageId: string
+  title: string
+  url: string
+}
+
+export interface UpdateApiDocFromControllerInput {
+  pageId: string
+  controllerPath: string
+  baseUrl?: string
+  filterTags?: string[]
+  filterPaths?: string[]
+}
+
+export interface UpdateApiDocFromControllerOutput {
+  pageId: string
+  title: string
+  url: string
+  version: number
+}

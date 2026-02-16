@@ -1,31 +1,38 @@
 import { ConfluenceClient } from '../services/confluence-client.js'
-import { SwaggerParserService } from '../services/swagger-parser.js'
+import { ControllerParserService } from '../services/controller-parser.js'
 import { PostmanGenerator } from '../services/postman-generator.js'
 import { DocGenerator } from '../services/doc-generator.js'
-import { UpdateApiDocInput, UpdateApiDocOutput } from '../types/tools.js'
+import { SwaggerParserService } from '../services/swagger-parser.js'
+import { UpdateApiDocFromControllerInput, UpdateApiDocFromControllerOutput } from '../types/tools.js'
 
-export async function updateApiDoc(
+export async function updateApiDocFromController(
   confluenceClient: ConfluenceClient,
-  swaggerParser: SwaggerParserService,
+  controllerParser: ControllerParserService,
   postmanGenerator: PostmanGenerator,
   docGenerator: DocGenerator,
-  input: UpdateApiDocInput
-): Promise<UpdateApiDocOutput> {
+  swaggerParser: SwaggerParserService,
+  input: UpdateApiDocFromControllerInput
+): Promise<UpdateApiDocFromControllerOutput> {
   if (!input.pageId || input.pageId.trim().length === 0) {
     throw new Error('Page ID is required')
   }
 
-  if (!input.swaggerSource || input.swaggerSource.trim().length === 0) {
-    throw new Error('Swagger source is required')
+  if (!input.controllerPath || input.controllerPath.trim().length === 0) {
+    throw new Error('Controller path is required')
   }
 
-  // Get existing page
+  // Get existing page to preserve metadata
   const existingPage = await confluenceClient.getPage(input.pageId)
 
-  // Parse swagger spec
-  let swagger = input.swaggerSource.startsWith('http')
-    ? await swaggerParser.parseFromUrl(input.swaggerSource)
-    : await swaggerParser.parseFromFile(input.swaggerSource)
+  // Parse controller(s)
+  let swagger = input.controllerPath.endsWith('.controller.ts')
+    ? await controllerParser.parseFromFile(input.controllerPath)
+    : await controllerParser.parseFromDirectory(input.controllerPath)
+
+  // Set base URL for Postman if provided
+  if (input.baseUrl) {
+    swagger.baseUrl = input.baseUrl
+  }
 
   // Filter by tags or paths if specified
   let endpoints = swagger.endpoints
@@ -40,9 +47,9 @@ export async function updateApiDoc(
   const groupedEndpoints = swaggerParser.groupEndpointsByTag(endpoints)
 
   // Generate Postman collection
-  const postmanJson = JSON.stringify(postmanGenerator.generate(swagger), null, 2)
+  const postmanJson = JSON.stringify(postmanGenerator.generate(swagger, input.baseUrl), null, 2)
 
-  // Generate documentation
+  // Generate documentation with Postman
   const content = docGenerator.generateFullDocumentation(
     { ...swagger, endpoints },
     groupedEndpoints,

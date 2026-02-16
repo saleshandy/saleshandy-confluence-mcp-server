@@ -3,6 +3,8 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 import { ConfluenceClient } from './services/confluence-client.js'
 import { SwaggerParserService } from './services/swagger-parser.js'
+import { ControllerParserService } from './services/controller-parser.js'
+import { PostmanGenerator } from './services/postman-generator.js'
 import { DocGenerator } from './services/doc-generator.js'
 import { defineTools, executeTool } from './tools/index.js'
 
@@ -10,11 +12,15 @@ export class ConfluenceApiDocsMcpServer {
   private server: Server
   private confluenceClient: ConfluenceClient
   private swaggerParser: SwaggerParserService
+  private controllerParser: ControllerParserService
+  private postmanGenerator: PostmanGenerator
   private docGenerator: DocGenerator
 
   constructor(baseUrl: string, email: string, apiToken: string) {
     this.confluenceClient = new ConfluenceClient(baseUrl, email, apiToken)
     this.swaggerParser = new SwaggerParserService()
+    this.controllerParser = new ControllerParserService()
+    this.postmanGenerator = new PostmanGenerator()
     this.docGenerator = new DocGenerator()
 
     this.server = new Server(
@@ -47,6 +53,8 @@ export class ConfluenceApiDocsMcpServer {
           args as Record<string, unknown>,
           this.confluenceClient,
           this.swaggerParser,
+          this.controllerParser,
+          this.postmanGenerator,
           this.docGenerator
         )
         return {
@@ -58,7 +66,20 @@ export class ConfluenceApiDocsMcpServer {
           ],
         }
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error)
+        let errorMessage = 'Unknown error'
+        let errorDetails = ''
+
+        if (error instanceof Error) {
+          errorMessage = error.message
+          errorDetails = error.stack || ''
+        } else if (typeof error === 'object' && error !== null) {
+          errorMessage = JSON.stringify(error, null, 2)
+        } else {
+          errorMessage = String(error)
+        }
+
+        console.error(`[MCP] Tool execution error for "${name}":`, errorMessage, errorDetails)
+
         return {
           content: [
             {
