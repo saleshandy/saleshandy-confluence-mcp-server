@@ -11,7 +11,7 @@ import {
 
 export class PostmanGenerator {
   generate(swagger: ParsedSwagger, baseUrl?: string): PostmanCollection {
-    const finalBaseUrl = baseUrl || swagger.baseUrl || 'https://api.example.com'
+    const finalBaseUrl = baseUrl || swagger.baseUrl || 'https://pyxis.lifeisgoodforlearner.com/api/edge'
 
     const items: PostmanItem[] = swagger.endpoints.map((endpoint) =>
       this.createRequestItem(endpoint, finalBaseUrl)

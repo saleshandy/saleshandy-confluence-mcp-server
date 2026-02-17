@@ -56,9 +56,8 @@ export class DocGenerator {
   private generateOverview(swagger: ParsedSwagger): string {
     let html = '<h2>API Overview</h2>\n'
     html += `<p><strong>Version:</strong> ${swagger.version}</p>\n`
-    if (swagger.baseUrl || this.baseUrl) {
-      html += `<p><strong>Base URL:</strong> <code>${this.escapeHtml(swagger.baseUrl || this.baseUrl)}</code></p>\n`
-    }
+    const displayBaseUrl = swagger.baseUrl || this.baseUrl || 'https://pyxis.lifeisgoodforlearner.com/api/edge'
+    html += `<p><strong>Base URL:</strong> <code>${this.escapeHtml(displayBaseUrl)}</code></p>\n`
     return html
   }
 
@@ -220,7 +219,7 @@ export class DocGenerator {
   }
 
   private generateCurlExample(endpoint: ParsedEndpoint, resolvedBody: ResolvedRequestBody | null): string {
-    const baseUrl = this.baseUrl || 'https://api.example.com'
+    const baseUrl = this.baseUrl || 'https://pyxis.lifeisgoodforlearner.com/api/edge'
     let path = endpoint.path
 
     // Build query string from parameters

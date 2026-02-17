@@ -164,6 +164,7 @@ export class ConfluenceClient {
       console.error('[Confluence] updatePage: Updating page', request.id)
       const payload = {
         id: request.id,
+        status: 'current',
         title: request.title,
         type: request.type || 'page',
         version: request.version,
@@ -220,8 +221,12 @@ export class ConfluenceClient {
 
   async getSpaceByKey(spaceKey: string): Promise<ConfluenceSpace | null> {
     try {
-      const response = await this.client.get<ConfluenceSpace>(`/wiki/api/v2/spaces/${spaceKey}`)
-      return response.data
+      const response = await this.client.get<{ results: ConfluenceSpace[] }>(
+        '/wiki/api/v2/spaces',
+        { params: { keys: spaceKey, limit: 1 } }
+      )
+      const results = response.data.results || []
+      return results.find((s) => s.key === spaceKey) || null
     } catch {
       return null
     }
