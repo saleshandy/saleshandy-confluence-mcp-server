@@ -29,11 +29,6 @@ npm run build
     "confluence-api-docs": {
       "command": "node",
       "args": ["/home/harsh-vaghela/saleshandy/confluence-api-docs-mcp/dist/index.js"],
-      "env": {
-        "CONFLUENCE_BASE_URL": "https://yourcompany.atlassian.net",
-        "CONFLUENCE_EMAIL": "your.email@company.com",
-        "CONFLUENCE_API_TOKEN": "your-api-token"
-      }
     }
   }
 }
