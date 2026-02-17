@@ -1,11 +1,13 @@
 import { ConfluenceClient } from '../services/confluence-client.js'
 import { SwaggerParserService } from '../services/swagger-parser.js'
+import { PostmanGenerator } from '../services/postman-generator.js'
 import { DocGenerator } from '../services/doc-generator.js'
 import { SyncSwaggerInput, SyncSwaggerOutput } from '../types/tools.js'
 
 export async function syncSwaggerToConfluence(
   confluenceClient: ConfluenceClient,
   swaggerParser: SwaggerParserService,
+  postmanGenerator: PostmanGenerator,
   docGenerator: DocGenerator,
   input: SyncSwaggerInput
 ): Promise<SyncSwaggerOutput> {
@@ -28,9 +30,11 @@ export async function syncSwaggerToConfluence(
 
   // Single page mode
   if (groupBy === 'single') {
+    const postmanJson = JSON.stringify(postmanGenerator.generate(swagger), null, 2)
     const content = docGenerator.generateFullDocumentation(
       swagger,
-      swaggerParser.groupEndpointsByTag(swagger.endpoints)
+      swaggerParser.groupEndpointsByTag(swagger.endpoints),
+      postmanJson
     )
 
     const pageTitle = `${swagger.title} - API Documentation`
@@ -86,9 +90,15 @@ export async function syncSwaggerToConfluence(
 
     // Create child pages for each group
     for (const [groupName, endpoints] of groupedEndpoints.entries()) {
+      const groupPostmanJson = JSON.stringify(
+        postmanGenerator.generate({ ...swagger, endpoints }),
+        null,
+        2
+      )
       const groupContent = docGenerator.generateFullDocumentation(
         { ...swagger, endpoints },
-        new Map([[groupName, endpoints]])
+        new Map([[groupName, endpoints]]),
+        groupPostmanJson
       )
 
       const childPage = await confluenceClient.createPage({

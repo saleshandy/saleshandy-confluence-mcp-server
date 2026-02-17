@@ -1,28 +1,35 @@
 import { ConfluenceClient } from '../services/confluence-client.js'
-import { SwaggerParserService } from '../services/swagger-parser.js'
+import { ControllerParserService } from '../services/controller-parser.js'
 import { PostmanGenerator } from '../services/postman-generator.js'
 import { DocGenerator } from '../services/doc-generator.js'
-import { CreateApiDocInput, CreateApiDocOutput } from '../types/tools.js'
+import { SwaggerParserService } from '../services/swagger-parser.js'
+import { CreateApiDocFromControllerInput, CreateApiDocFromControllerOutput } from '../types/tools.js'
 
-export async function createApiDoc(
+export async function createApiDocFromController(
   confluenceClient: ConfluenceClient,
-  swaggerParser: SwaggerParserService,
+  controllerParser: ControllerParserService,
   postmanGenerator: PostmanGenerator,
   docGenerator: DocGenerator,
-  input: CreateApiDocInput
-): Promise<CreateApiDocOutput> {
-  if (!input.swaggerSource || input.swaggerSource.trim().length === 0) {
-    throw new Error('Swagger source is required')
+  swaggerParser: SwaggerParserService,
+  input: CreateApiDocFromControllerInput
+): Promise<CreateApiDocFromControllerOutput> {
+  if (!input.controllerPath || input.controllerPath.trim().length === 0) {
+    throw new Error('Controller path is required')
   }
 
   if (!input.spaceKey || input.spaceKey.trim().length === 0) {
     throw new Error('Space key is required')
   }
 
-  // Parse swagger spec
-  let swagger = input.swaggerSource.startsWith('http')
-    ? await swaggerParser.parseFromUrl(input.swaggerSource)
-    : await swaggerParser.parseFromFile(input.swaggerSource)
+  // Parse controller(s)
+  let swagger = input.controllerPath.endsWith('.controller.ts')
+    ? await controllerParser.parseFromFile(input.controllerPath)
+    : await controllerParser.parseFromDirectory(input.controllerPath)
+
+  // Set base URL for Postman if provided
+  if (input.baseUrl) {
+    swagger.baseUrl = input.baseUrl
+  }
 
   // Filter by tags or paths if specified
   let endpoints = swagger.endpoints
@@ -37,9 +44,9 @@ export async function createApiDoc(
   const groupedEndpoints = swaggerParser.groupEndpointsByTag(endpoints)
 
   // Generate Postman collection
-  const postmanJson = JSON.stringify(postmanGenerator.generate(swagger), null, 2)
+  const postmanJson = JSON.stringify(postmanGenerator.generate(swagger, input.baseUrl), null, 2)
 
-  // Generate documentation
+  // Generate documentation with Postman
   const content = docGenerator.generateFullDocumentation(
     { ...swagger, endpoints },
     groupedEndpoints,
